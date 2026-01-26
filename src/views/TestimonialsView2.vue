@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref, nextTick, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+const baseUrl = import.meta.env.BASE_URL 
 
 const { locale } = useI18n()
 const subtest = computed(() => {
@@ -145,7 +146,7 @@ onMounted(async () => {
           
           <div class="tm-person-img-container">
             <img 
-              :src="`/img/person-${(index % 3) + 1}.png`" 
+              :src="`${baseUrl}img/person-${(index % 3) + 1}.png`"  
               alt="Image" 
               class="img-fluid mx-auto"
             />

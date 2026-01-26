@@ -99,6 +99,18 @@ const openImageModal = (imageUrl, title) => {
   showModal.value = true
 }
 const closeModal = () => { showModal.value = false }
+
+const resolvePath = (path) => {
+  if (!path) return ''
+  // If it's already an external link (http...), return as is
+  if (path.startsWith('http')) return path
+  
+  // Remove leading slash if present (e.g. "/img..." -> "img...")
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path
+  
+  // Combine with Base URL
+  return import.meta.env.BASE_URL + cleanPath
+}
 </script>
 
 <template>
@@ -163,11 +175,11 @@ const closeModal = () => { showModal.value = false }
                         </p>
 
                         <div class="mt-3 border-top pt-3">
-                            <button @click="openImageModal(project.image_url, getTitle(project))" 
-                                    class="btn btn-info btn-sm btn-block mb-2 rounded-0">
-                                <i class="fas fa-image mr-2"></i> 
-                                {{ locale === 'vi' ? 'Xem ảnh' : 'View Screenshot' }}
-                            </button>
+                            <button @click="openImageModal(resolvePath(project.image_url), getTitle(project))" 
+            class="btn btn-info btn-sm btn-block mb-2 rounded-0">
+        <i class="fas fa-image mr-2"></i> 
+        {{ locale === 'vi' ? 'Xem ảnh' : 'View Screenshot' }}
+    </button>
 
                             <div class="d-flex justify-content-between">
                                 <a v-if="project.link_live" :href="project.link_live" target="_blank" class="btn btn-success btn-sm flex-fill mr-1 rounded-0">

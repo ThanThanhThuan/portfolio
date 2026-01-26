@@ -22,7 +22,10 @@ const isSuccess = ref(false)
 // 1. Image Path Logic
 const computedImagePath = computed(() => {
   if (!form.value.image_filename) return ''
-  return `/img/projects/${form.value.image_filename.trim()}`
+  
+  // Combine Base URL + path
+  // NOTE: import.meta.env.BASE_URL usually includes the trailing slash (e.g. "/portfolio/")
+  return `${import.meta.env.BASE_URL}img/projects/${form.value.image_filename.trim()}`
 })
 
 const isValidFilename = computed(() => {
