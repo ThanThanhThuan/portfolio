@@ -3,6 +3,7 @@ import { RouterView } from 'vue-router'
 import NavBar from './components/NavBar.vue'
 import VisitorCounter from './components/VisitorCounter.vue'
 import { useI18n } from 'vue-i18n'
+const baseUrl = import.meta.env.BASE_URL
 
 const { t } = useI18n()
 
@@ -10,7 +11,7 @@ const { t } = useI18n()
 
 <template>
   <!-- Main Parallax Container -->
-  <div class="parallax-window" data-parallax="scroll" data-image-src="/img/bg-01.jpg">
+  <div class="parallax-window" data-parallax="scroll" :data-image-src="`${baseUrl}img/bg-01.jpg`">
     <div class="container-fluid">
       <div class="row tm-brand-row">
         <div class="col-lg-4 col-11">
