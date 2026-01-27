@@ -28,6 +28,14 @@ const computedImagePath = computed(() => {
   return `${import.meta.env.BASE_URL}img/projects/${form.value.image_filename.trim()}`
 })
 
+const computedImagePath0 = computed(() => {
+  if (!form.value.image_filename) return ''
+  
+  // Combine Base URL + path
+  // NOTE: import.meta.env.BASE_URL usually includes the trailing slash (e.g. "/portfolio/")
+  return `img/projects/${form.value.image_filename.trim()}`
+})
+
 const isValidFilename = computed(() => {
   const name = form.value.image_filename.toLowerCase()
   // Allow empty while typing, but submit will catch it. 
@@ -213,3 +221,16 @@ const submitProject = async () => {
     </section>
   </div>
 </template>
+<style scoped>
+/* Target the placeholder text specifically */
+.form-control::placeholder {
+    /* 50% opacity white - looks gray/dim against the dark background */
+    color: rgba(255, 255, 255, 0.4) !important; 
+    opacity: 1; /* Required for Firefox to respect the alpha color */
+}
+
+/* Optional: When user clicks to type, make the placeholder slightly more visible */
+.form-control:focus::placeholder {
+    color: rgba(255, 255, 255, 0.2) !important; /* Even fainter when typing */
+}
+</style>
