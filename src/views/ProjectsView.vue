@@ -13,10 +13,26 @@ const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 6
 
-// Modal
+// --- MODAL STATE ---
 const showModal = ref(false)
-const selectedImage = ref('')
+const selectedImages = ref([]) // Changed to Array
 const selectedTitle = ref('')
+const currentImageIndex = ref(0) // Track current slide
+
+// --- HELPER: Resolve Base URL ---
+const resolvePath = (path) => {
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path
+  return import.meta.env.BASE_URL + cleanPath
+}
+
+// --- HELPER: Parse Comma Separated URLs ---
+const parseImages = (rawString) => {
+    if (!rawString) return []
+    // Split by comma, trim whitespace, and resolve path for each
+    return rawString.split(',').map(url => resolvePath(url.trim()))
+}
 
 onMounted(async () => {
   try {
@@ -93,23 +109,40 @@ const totalPages = computed(() => Math.ceil(filteredProjects.value.length / item
 // Actions
 const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
 const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
-const openImageModal = (imageUrl, title) => {
-  selectedImage.value = imageUrl
+const openImageModal = (rawUrlString, title) => {
+  selectedImages.value = parseImages(rawUrlString) // Parse string to array
   selectedTitle.value = title
+  currentImageIndex.value = 0 // Always start at first image
   showModal.value = true
 }
 const closeModal = () => { showModal.value = false }
 
-const resolvePath = (path) => {
-  if (!path) return ''
-  // If it's already an external link (http...), return as is
-  if (path.startsWith('http')) return path
+// const resolvePath0 = (path) => {
+//   if (!path) return ''
+//   // If it's already an external link (http...), return as is
+//   if (path.startsWith('http')) return path
   
-  // Remove leading slash if present (e.g. "/img..." -> "img...")
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path
+//   // Remove leading slash if present (e.g. "/img..." -> "img...")
+//   const cleanPath = path.startsWith('/') ? path.slice(1) : path
   
-  // Combine with Base URL
-  return import.meta.env.BASE_URL + cleanPath
+//   // Combine with Base URL
+//   return import.meta.env.BASE_URL + cleanPath
+// }
+// Slider Navigation
+const nextSlide = () => {
+    if (currentImageIndex.value < selectedImages.value.length - 1) {
+        currentImageIndex.value++
+    } else {
+        currentImageIndex.value = 0 // Loop back to start
+    }
+}
+
+const prevSlide = () => {
+    if (currentImageIndex.value > 0) {
+        currentImageIndex.value--
+    } else {
+        currentImageIndex.value = selectedImages.value.length - 1 // Loop to end
+    }
 }
 </script>
 
@@ -175,11 +208,11 @@ const resolvePath = (path) => {
                         </p>
 
                         <div class="mt-3 border-top pt-3">
-                            <button @click="openImageModal(resolvePath(project.image_url), getTitle(project))" 
-            class="btn btn-info btn-sm btn-block mb-2 rounded-0">
-        <i class="fas fa-image mr-2"></i> 
-        {{ locale === 'vi' ? 'Xem ảnh' : 'View Screenshot' }}
-    </button>
+                            <button @click="openImageModal(project.image_url, getTitle(project))" 
+                                    class="btn btn-info btn-sm btn-block mb-2 rounded-0">
+                                <i class="fas fa-images mr-2"></i> 
+                                {{ locale === 'vi' ? 'Xem ảnh' : 'View Images' }}
+                            </button>
 
                             <div class="d-flex justify-content-between">
                                 <a v-if="project.link_live" :href="project.link_live" target="_blank" class="btn btn-success btn-sm flex-fill mr-1 rounded-0">
@@ -215,21 +248,64 @@ const resolvePath = (path) => {
         </div>
     </section>
 
-    <!-- Custom Image Modal -->
+    <!-- UPDATED IMAGE MODAL -->
     <div v-if="showModal" class="custom-modal-overlay" @click.self="closeModal">
         <div class="custom-modal-content">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="text-dark">{{ selectedTitle }}</h5>
-                <button type="button" class="close" @click="closeModal">
-                    <span>&times;</span>
+            
+            <!-- Modal Header -->
+            <div class="modal-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="text-dark mb-0">{{ selectedTitle }}</h5>
+                
+                <!-- Counter (Only show if multiple images) -->
+                <span v-if="selectedImages.length > 1" class="badge badge-secondary ml-2">
+                    {{ currentImageIndex + 1 }} / {{ selectedImages.length }}
+                </span>
+
+                <button type="button" class="close ml-auto" @click="closeModal">
+                    <span style="font-size: 1.5rem;">&times;</span>
                 </button>
             </div>
-            <div class="modal-body text-center">
-                <img :src="selectedImage" class="img-fluid" alt="Project Screenshot">
+
+            <!-- Modal Body / Carousel -->
+            <div class="modal-body text-center position-relative p-0 mt-2">
+                
+                <!-- PREV Button (Only if > 1 image) -->
+                <button v-if="selectedImages.length > 1" class="nav-btn prev-btn" @click.stop="prevSlide">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+
+                <!-- The Image -->
+                <div class="image-wrapper">
+                    <img 
+                        v-if="selectedImages.length > 0"
+                        :src="selectedImages[currentImageIndex]" 
+                        class="img-fluid" 
+                        alt="Project Screenshot"
+                        style="max-height: 80vh;"
+                    >
+                    <p v-else class="text-dark py-5">No image available</p>
+                </div>
+
+                <!-- NEXT Button (Only if > 1 image) -->
+                <button v-if="selectedImages.length > 1" class="nav-btn next-btn" @click.stop="nextSlide">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+
             </div>
+            
+            <!-- Thumbnail Indicators (Optional, nice to have) -->
+            <div v-if="selectedImages.length > 1" class="d-flex justify-content-center pb-2 mt-2">
+                <span 
+                    v-for="(img, idx) in selectedImages" 
+                    :key="idx" 
+                    class="dot-indicator"
+                    :class="{ active: idx === currentImageIndex }"
+                    @click="currentImageIndex = idx"
+                ></span>
+            </div>
+
         </div>
     </div>
-
   </div>
 </template>
 
@@ -284,5 +360,63 @@ const resolvePath = (path) => {
 
 .tm-text-primary {
     color: #66CCFF; /* Match template theme */
+}
+/* Modal Structure */
+.custom-modal-content {
+    background: white;
+    padding: 10px;
+    width: 100%;
+    max-width: 900px; /* Wider for gallery */
+    max-height: 95vh;
+    overflow: hidden; /* Prevent scroll, keep arrows visible */
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-body {
+    background: #f8f9fa; /* Light gray bg for image container */
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Navigation Buttons */
+.nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 60px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.3s;
+}
+
+.nav-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.prev-btn { left: 0; border-top-right-radius: 5px; border-bottom-right-radius: 5px; }
+.next-btn { right: 0; border-top-left-radius: 5px; border-bottom-left-radius: 5px; }
+
+/* Dot Indicators */
+.dot-indicator {
+    width: 10px;
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 50%;
+    margin: 0 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.dot-indicator.active {
+    background-color: #333;
 }
 </style>
