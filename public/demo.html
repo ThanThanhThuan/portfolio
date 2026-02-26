@@ -1,7 +1,745 @@
-<html>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quy trình AppSheet — Chế tạo Ghế Ăn</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208;
+    --cream: #f8f3e8;
+    --warm: #f0e6cc;
+    --amber: #c8860a;
+    --amber-light: #e8a020;
+    --wood: #8b5e2a;
+    --sage: #5a7a5a;
+    --rust: #b84a1a;
+    --muted: #6b5c42;
+    --line: #d4c4a0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  header {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 60px 40px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--amber), var(--wood), var(--amber-light));
+  }
+
+  .header-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 16px;
+    font-weight: 400;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.6rem);
+    font-weight: 900;
+    line-height: 1.1;
+    max-width: 700px;
+  }
+
+  header h1 em {
+    font-style: italic;
+    color: var(--amber-light);
+  }
+
+  .header-sub {
+    margin-top: 18px;
+    font-size: 15px;
+    color: #b8a882;
+    max-width: 520px;
+    font-weight: 300;
+  }
+
+  /* Wood grain decorative bar */
+  .grain-bar {
+    height: 8px;
+    background: repeating-linear-gradient(
+      90deg,
+      #8b5e2a 0px, #a07040 2px, #7a4e1e 5px, #9a6830 8px, #8b5e2a 12px
+    );
+    opacity: 0.6;
+  }
+
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 40px 100px;
+  }
+
+  /* Step cards */
+  .step {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 0 28px;
+    margin-bottom: 56px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .step:nth-child(1) { animation-delay: 0.05s; }
+  .step:nth-child(2) { animation-delay: 0.12s; }
+  .step:nth-child(3) { animation-delay: 0.19s; }
+  .step:nth-child(4) { animation-delay: 0.26s; }
+  .step:nth-child(5) { animation-delay: 0.33s; }
+  .step:nth-child(6) { animation-delay: 0.40s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-num {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 4px;
+  }
+
+  .step-num .num {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--amber-light);
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-num .connector {
+    width: 2px;
+    flex: 1;
+    min-height: 40px;
+    background: linear-gradient(to bottom, var(--line), transparent);
+    margin-top: 10px;
+  }
+
+  .step-body {
+    padding-bottom: 8px;
+  }
+
+  .step-tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 400;
+  }
+
+  .step-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 14px;
+    color: var(--ink);
+  }
+
+  .step-body p {
+    font-size: 15px;
+    color: #3a2e1e;
+    margin-bottom: 14px;
+    font-weight: 300;
+  }
+
+  /* Tables */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+
+  .data-table th {
+    background: var(--ink);
+    color: var(--amber-light);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+  }
+
+  .data-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    color: #2a1e0e;
+    font-weight: 300;
+  }
+
+  .data-table tr:nth-child(even) td {
+    background: var(--warm);
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+
+  /* BOM sub-list */
+  .bom-list {
+    list-style: none;
+    margin: 14px 0;
+  }
+
+  .bom-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 14px;
+    border-left: 3px solid var(--line);
+    margin-bottom: 6px;
+    font-size: 14px;
+    background: var(--warm);
+    font-weight: 300;
+  }
+
+  .bom-list li::before {
+    content: '↳';
+    color: var(--amber);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .qty {
+    margin-left: auto;
+    font-weight: 600;
+    color: var(--wood);
+    font-size: 13px;
+    background: white;
+    padding: 2px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+  }
+
+  /* Callout boxes */
+  .callout {
+    border-left: 4px solid var(--amber);
+    background: linear-gradient(135deg, #fffbf0, #fdf5dc);
+    padding: 16px 20px;
+    margin: 18px 0;
+    font-size: 14px;
+    color: #3a2a0a;
+  }
+
+  .callout strong {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  .callout .formula {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    background: rgba(0,0,0,0.06);
+    padding: 8px 12px;
+    margin-top: 8px;
+    border-radius: 2px;
+    line-height: 1.8;
+  }
+
+  /* Action steps */
+  .action-steps {
+    counter-reset: action;
+    list-style: none;
+    margin: 14px 0;
+  }
+
+  .action-steps li {
+    counter-increment: action;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 300;
+    color: #2a1e0e;
+  }
+
+  .action-steps li::before {
+    content: counter(action);
+    min-width: 24px;
+    height: 24px;
+    background: var(--wood);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* Status badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .badge-draft   { background: #e8e0cc; color: #5a4a2a; }
+  .badge-in-progress { background: #fff0cc; color: #8a5a00; }
+  .badge-done    { background: #d4ecd4; color: #2a5a2a; }
+
+  /* Automation log */
+  .log-entries {
+    background: #1a1208;
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+  }
+
+  .log-title {
+    color: #6b8b6b;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    font-family: 'Source Sans 3', sans-serif;
+  }
+
+  .log-entry {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .log-entry .sign {
+    font-size: 16px;
+    font-weight: 700;
+    min-width: 20px;
+  }
+
+  .log-entry .sign.plus  { color: #5dba5d; }
+  .log-entry .sign.minus { color: #e06060; }
+
+  .log-entry .log-text { color: #c8bca0; }
+
+  .log-entry .log-type {
+    margin-left: auto;
+    color: #6b5c42;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  /* Results */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .result-card {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 18px 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--amber);
+  }
+
+  .result-card .label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #8a7a5a;
+    margin-bottom: 8px;
+    font-weight: 400;
+  }
+
+  .result-card .before {
+    font-size: 12px;
+    color: #6b5c42;
+    text-decoration: line-through;
+    margin-bottom: 2px;
+  }
+
+  .result-card .after {
+    font-size: 1.8rem;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: var(--amber-light);
+    line-height: 1;
+  }
+
+  .result-card .unit {
+    font-size: 11px;
+    color: #7a6a4a;
+    margin-top: 4px;
+  }
+
+  /* Final CTA */
+  .finale {
+    margin-top: 64px;
+    padding: 40px;
+    background: var(--ink);
+    color: var(--cream);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .finale::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(200,134,10,0.15), transparent 70%);
+  }
+
+  .finale h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--amber-light);
+    margin-bottom: 12px;
+    position: relative;
+  }
+
+  .finale p {
+    font-size: 15px;
+    color: #a89878;
+    max-width: 480px;
+    margin: 0 auto;
+    font-weight: 300;
+    position: relative;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 48px 0;
+  }
+
+  @media (max-width: 600px) {
+    main { padding: 40px 20px 80px; }
+    header { padding: 40px 20px 36px; }
+    .step { grid-template-columns: 48px 1fr; gap: 0 16px; }
+    .step-num .num { width: 40px; height: 40px; font-size: 18px; }
+    .results-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
 <body>
-<div>
-  <h1>Hi</h1>
-</div>
+
+<header>
+  <div class="header-label">AppSheet · Hướng dẫn thực hành</div>
+  <h1>Chế tạo<br><em>Ghế Ăn Bằng Gỗ</em></h1>
+  <p class="header-sub">Quy trình 6 bước từ danh mục nguyên liệu đến thành phẩm — với tự động hóa hoàn toàn.</p>
+</header>
+
+<div class="grain-bar"></div>
+
+<main>
+
+  <!-- Step 1 -->
+  <div class="step">
+    <div class="step-num">
+      <div class="num">1</div>
+      <div class="connector"></div>
+    </div>
+    <div class="step-body">
+      <span class="step-tag">Danh mục chính</span>
+      <h2 class="step-title">Điền vào Danh mục Mặt hàng</h2>
+      <p>Trước tiên, bạn cần cho ứng dụng biết bạn có những gì trong kho. Vào chế độ xem <strong>Danh mục mặt hàng</strong> và thêm bốn mặt hàng:</p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Mặt hàng</th>
+            <th>Danh mục</th>
+            <th>ĐVT</th>
+            <th>Giá thành</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>🪵 Ván gỗ</td>
+            <td>Nguyên liệu thô</td>
+            <td>cái</td>
+            <td>$10,00</td>
+          </tr>
+          <tr>
+            <td>🔩 Ốc vít</td>
+            <td>Nguyên liệu thô</td>
+            <td>cái</td>
+            <td>$0,10</td>
+          </tr>
+          <tr>
+            <td>🧴 Keo dán gỗ</td>
+            <td>Nguyên liệu thô</td>
+            <td>lít</td>
+            <td>$5,00</td>
+          </tr>
+          <tr>
+            <td>🪑 Ghế ăn</td>
+            <td>Thành phẩm</td>
+            <td>cái</td>
+            <td><em style="color:var(--muted)">Tự động tính</em></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <div class="step-num">
+      <div class="num">2</div>
+      <div class="connector"></div>
+    </div>
+    <div class="step-body">
+      <span class="step-tag">Bill of Materials</span>
+      <h2 class="step-title">Xây dựng Công thức (BOM)</h2>
+      <p>Chạm vào <strong>Ghế ăn</strong> trong danh mục, cuộn xuống phần <em>Thành phần BOM</em> và thêm từng thành phần:</p>
+
+      <ul class="bom-list">
+        <li>🪵 Ván gỗ <span class="qty">× 2 cái</span></li>
+        <li>🔩 Ốc vít <span class="qty">× 8 cái</span></li>
+        <li>🧴 Keo dán gỗ <span class="qty">× 0,1 lít</span></li>
+      </ul>
+
+      <div class="callout">
+        <strong>✦ Kết quả tự động</strong>
+        Đơn giá của Ghế ăn được tính ngay lập tức:
+        <div class="formula">
+          (2 × $10,00) + (8 × $0,10) + (0,1 × $5,00)<br>
+          = $20,00 + $0,80 + $0,50<br>
+          = <strong>$21,30 / ghế</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <div class="step-num">
+      <div class="num">3</div>
+      <div class="connector"></div>
+    </div>
+    <div class="step-body">
+      <span class="step-tag">Nhật ký tồn kho</span>
+      <h2 class="step-title">Nhận Nguyên liệu Thô</h2>
+      <p>Bạn vừa mua nguyên liệu từ nhà cung cấp. Vào <strong>Bảng điều khiển tồn kho</strong> và thêm mục mới cho từng nguyên liệu:</p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Mặt hàng</th>
+            <th>Loại giao dịch</th>
+            <th>Số lượng</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>🪵 Ván gỗ</td>
+            <td>Mua</td>
+            <td>+100</td>
+          </tr>
+          <tr>
+            <td>🔩 Ốc vít</td>
+            <td>Mua</td>
+            <td>+500</td>
+          </tr>
+          <tr>
+            <td>🧴 Keo dán gỗ</td>
+            <td>Mua</td>
+            <td>+5 lít</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <strong>✦ Cập nhật tức thì</strong>
+        Lượng hàng tồn kho hiện tại của bạn cho các mặt hàng này sẽ được cập nhật ngay lập tức trên toàn ứng dụng.
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <div class="step-num">
+      <div class="num">4</div>
+      <div class="connector"></div>
+    </div>
+    <div class="step-body">
+      <span class="step-tag">Lệnh sản xuất</span>
+      <h2 class="step-title">Lập kế hoạch Sản xuất</h2>
+      <p>Một khách hàng vừa đặt mua 10 chiếc ghế. Đi đến <strong>Bảng sản xuất</strong> và tạo lệnh mới:</p>
+
+      <ol class="action-steps">
+        <li>Nhấn nút <strong>+</strong> để tạo đơn hàng mới.</li>
+        <li>Mặt hàng cần sản xuất: chọn <strong>Ghế ăn</strong>.</li>
+        <li>Số lượng mục tiêu: <strong>10</strong>.</li>
+        <li>Trạng thái: chọn <span class="badge badge-draft">Bản nháp</span>. Lưu.</li>
+      </ol>
+
+      <div class="callout">
+        <strong>✦ Kết quả tự động</strong>
+        Ứng dụng hiển thị <strong>Chi phí ước tính: $213,00</strong> cho lần sản xuất 10 ghế này ngay trên thẻ lệnh.
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step">
+    <div class="step-num">
+      <div class="num">5</div>
+      <div class="connector"></div>
+    </div>
+    <div class="step-body">
+      <span class="step-tag">Hành động sản xuất</span>
+      <h2 class="step-title">Thực hiện Sản xuất</h2>
+      <p>Công nhân trên dây chuyền mở ứng dụng trên máy tính bảng và thấy lệnh đang ở trạng thái <span class="badge badge-draft">Bản nháp</span>.</p>
+
+      <ol class="action-steps">
+        <li>Nhấn biểu tượng <strong>▶ Phát</strong> → Thẻ chuyển sang <span class="badge badge-in-progress">Đang tiến hành</span>.</li>
+        <li>Dành cả buổi chiều để cắt gỗ và lắp ráp 10 chiếc ghế.</li>
+        <li>Nhấn biểu tượng <strong>✓ Dấu tích</strong> → Thẻ chuyển sang <span class="badge badge-done">Đã hoàn thành</span>.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Step 6 -->
+  <div class="step">
+    <div class="step-num">
+      <div class="num">6</div>
+    </div>
+    <div class="step-body">
+      <span class="step-tag">Tự động hóa · Bot</span>
+      <h2 class="step-title">Phép màu của Tự động hóa</h2>
+      <p>Ngay khi nhấn dấu tích, Bot phía sau tự động ghi nhận tất cả các giao dịch kho hàng:</p>
+
+      <div class="log-entries">
+        <div class="log-title">// Nhật ký di chuyển kho — tự động tạo</div>
+        <div class="log-entry">
+          <span class="sign plus">+</span>
+          <span class="log-text">10 &nbsp;Ghế ăn</span>
+          <span class="log-type">Production Yield</span>
+        </div>
+        <div class="log-entry">
+          <span class="sign minus">−</span>
+          <span class="log-text">20 &nbsp;Ván gỗ</span>
+          <span class="log-type">Production Consumption</span>
+        </div>
+        <div class="log-entry">
+          <span class="sign minus">−</span>
+          <span class="log-text">80 &nbsp;Ốc vít</span>
+          <span class="log-type">Production Consumption</span>
+        </div>
+        <div class="log-entry">
+          <span class="sign minus">−</span>
+          <span class="log-text">1 lít &nbsp;Keo dán gỗ</span>
+          <span class="log-type">Production Consumption</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Results -->
+  <div style="animation: fadeUp 0.5s ease 0.5s both;">
+    <span class="step-tag" style="display:block;margin-bottom:10px;">Kết quả cuối cùng</span>
+    <h2 class="step-title" style="font-family:'Playfair Display',serif;font-size:1.7rem;margin-bottom:20px;">Không cần nhập liệu thủ công</h2>
+
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="label">🪑 Ghế ăn</div>
+        <div class="before">0</div>
+        <div class="after">10</div>
+        <div class="unit">cái thành phẩm</div>
+      </div>
+      <div class="result-card">
+        <div class="label">🪵 Ván gỗ</div>
+        <div class="before">100</div>
+        <div class="after">80</div>
+        <div class="unit">cái còn lại</div>
+      </div>
+      <div class="result-card">
+        <div class="label">🔩 Ốc vít</div>
+        <div class="before">500</div>
+        <div class="after">420</div>
+        <div class="unit">cái còn lại</div>
+      </div>
+      <div class="result-card">
+        <div class="label">🧴 Keo dán</div>
+        <div class="before">5 lít</div>
+        <div class="after">4</div>
+        <div class="unit">lít còn lại</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Finale -->
+  <div class="finale" style="margin-top:56px;animation:fadeUp 0.5s ease 0.6s both;">
+    <h2>Toàn bộ sức mạnh của AppSheet</h2>
+    <p>Quy trình đơn giản này thể hiện trọn vẹn sức mạnh của một ứng dụng AppSheet được xây dựng trên cơ sở dữ liệu quan hệ — tự động hóa từ đầu đến cuối, không sai sót, không nhập tay.</p>
+  </div>
+
+</main>
+
 </body>
 </html>
